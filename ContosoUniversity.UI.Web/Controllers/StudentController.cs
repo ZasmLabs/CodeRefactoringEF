@@ -10,12 +10,19 @@ using ContosoUniversity.Persistence.SQL;
 using ContosoUniversity.Models;
 using PagedList;
 using System.Data.Entity.Infrastructure;
+using ContosoUniversity.Interfaces;
 
 namespace ContosoUniversity.Controllers
 {
     public class StudentController : Controller
     {
-        private SchoolContext db = new SchoolContext("SchoolContext");
+        SchoolContext db;
+        IUnitOfWork _uow;
+
+        public StudentController(IUnitOfWork uow)
+        {
+            _uow = uow;
+        }
 
         // GET: Student
         public ViewResult Index(string sortOrder, string currentFilter, string searchString, int? page)
@@ -35,8 +42,7 @@ namespace ContosoUniversity.Controllers
 
             ViewBag.CurrentFilter = searchString;
 
-            var students = from s in db.Students
-                           select s;
+            var students = _uow.Students.GetAll().AsQueryable();
             if (!String.IsNullOrEmpty(searchString))
             {
                 students = students.Where(s => s.LastName.Contains(searchString)
@@ -191,14 +197,6 @@ namespace ContosoUniversity.Controllers
                 return RedirectToAction("Delete", new { id = id, saveChangesError = true });
             }
             return RedirectToAction("Index");
-        }
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                db.Dispose();
-            }
-            base.Dispose(disposing);
         }
     }
 }
